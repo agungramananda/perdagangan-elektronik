@@ -79,14 +79,14 @@ def render_time_series(df: pd.DataFrame):
     monthly = df.groupby("InvoiceMonth", as_index=False)["Revenue"].sum()
     fig = px.line(monthly, x="InvoiceMonth", y="Revenue", markers=True, title="Revenue by Month")
     fig.update_layout(yaxis_title="Revenue", xaxis_title="Month")
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, width='stretch')
 
 
 def render_country_bar(df: pd.DataFrame):
     country_rev = df.groupby("Country", as_index=False)["Revenue"].sum().sort_values("Revenue", ascending=False)
     fig = px.bar(country_rev, x="Revenue", y="Country", orientation="h", title="Revenue by Country")
     fig.update_layout(yaxis_title="Country", xaxis_title="Revenue", height=500)
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, width='stretch')
 
 
 def render_top_products(df: pd.DataFrame):
@@ -98,14 +98,14 @@ def render_top_products(df: pd.DataFrame):
     )
     fig = px.bar(prod_rev, x="Revenue", y="Description", orientation="h", title="Top Products by Revenue")
     fig.update_layout(yaxis_title="Product", xaxis_title="Revenue", height=600)
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, width='stretch')
 
 
 def render_hourly(df: pd.DataFrame):
     hourly = df.groupby("Hour", as_index=False)["Revenue"].sum()
     fig = px.bar(hourly, x="Hour", y="Revenue", title="Revenue by Hour of Day")
     fig.update_layout(xaxis=dict(dtick=1))
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, width='stretch')
 
 
 def render_detail_table(df: pd.DataFrame):
