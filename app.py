@@ -1,11 +1,16 @@
-import pandas as pd
-import streamlit as st
-import plotly.express as px
+import pickle
 from pathlib import Path
+
+import pandas as pd
+import plotly.express as px
+import plotly.graph_objects as go
+from prophet import Prophet
+import streamlit as st
 
 st.set_page_config(page_title="Online Retail BI", layout="wide")
 
 DATA_PATH = Path(__file__).parent / "Online Retail.xlsx"
+MODEL_PATH = Path(__file__).parent / "model" / "prophet_model.pkl"
 
 @st.cache_data(show_spinner=True)
 def load_data(path: Path) -> pd.DataFrame:
@@ -28,6 +33,16 @@ def load_data(path: Path) -> pd.DataFrame:
     df["InvoiceWeek"] = df["InvoiceDate"].dt.to_period("W-MON").apply(lambda r: r.start_time)
     df["Hour"] = df["InvoiceDate"].dt.hour
     return df
+
+
+@st.cache_resource(show_spinner=True)
+def load_model(path: Path) -> Prophet:
+    if not path.exists():
+        raise FileNotFoundError(f"Model file not found: {path}")
+
+    with open(path, "rb") as file:
+        model = pickle.load(file)
+    return model
 
 def render_header():
     st.title("Dashboard Penjualan")
@@ -112,10 +127,46 @@ def render_detail_table(df: pd.DataFrame):
     st.subheader("Filtered data sample")
     st.dataframe(df.head(200))
 
+def render_forecast(df: pd.DataFrame, model: Prophet):
+    st.subheader("Prediksi Penjualan")
+    horizon_days = st.slider("Prediksi (hari)", min_value=30, max_value=180, value=60, step=15)
+
+    future = model.make_future_dataframe(periods=horizon_days, freq="D")
+    forecast = model.predict(future)
+    forecast_display = forecast[["ds", "yhat", "yhat_lower", "yhat_upper"]]
+
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(x=forecast_display["ds"], y=forecast_display["yhat"], name="Prediksi", mode="lines"))
+    fig.add_trace(
+        go.Scatter(
+            x=forecast_display["ds"],
+            y=forecast_display["yhat_upper"],
+            name="Upper",
+            mode="lines",
+            line=dict(width=0),
+            showlegend=False,
+        )
+    )
+   
+    fig.update_layout(title="Prediksi Penjualan Harian", xaxis_title="Date", yaxis_title="Sales")
+
+    st.plotly_chart(fig, use_container_width=True)
+    
+    st.subheader("Detail Prediksi")
+    forecast_display_renamed = forecast_display.copy()
+    forecast_display_renamed.columns = ["Tanggal", "Prediksi Penjualan", "Batas Bawah", "Batas Atas"]
+    st.dataframe(forecast_display_renamed.tail(15))
+
 
 def main():
     try:
         data = load_data(DATA_PATH)
+    except FileNotFoundError as exc:
+        st.error(str(exc))
+        st.stop()
+
+    try:
+        model = load_model(MODEL_PATH)
     except FileNotFoundError as exc:
         st.error(str(exc))
         st.stop()
@@ -142,6 +193,7 @@ def main():
     with col4:
         render_hourly(filtered)
 
+    render_forecast(data, model)
     render_detail_table(filtered)
 
 
