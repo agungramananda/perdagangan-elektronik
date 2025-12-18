@@ -155,7 +155,7 @@ def render_forecast(df: pd.DataFrame, model: Prophet):
     st.subheader("Detail Prediksi")
     forecast_display_renamed = forecast_display.copy()
     forecast_display_renamed.columns = ["Tanggal", "Prediksi Penjualan", "Batas Bawah", "Batas Atas"]
-    st.dataframe(forecast_display_renamed.tail(15))
+    st.dataframe(forecast_display_renamed)
 
 
 def main():
